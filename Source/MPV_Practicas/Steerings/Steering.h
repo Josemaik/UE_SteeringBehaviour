@@ -8,5 +8,6 @@ class SteeringBehaviour
 public:
 	virtual ~SteeringBehaviour() {}
 	// Pure Method
-	virtual FSOutputSteering GetSteering(float DeltaTime) = 0;	
+	virtual FSOutputSteering GetSteering(float DeltaTime) = 0;
+	virtual void DrawDebug() = 0;
 };

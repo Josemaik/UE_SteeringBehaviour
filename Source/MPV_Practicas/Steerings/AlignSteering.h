@@ -4,16 +4,17 @@
 
 class AAICharacter;
 
-class SeekSteering : public SteeringBehaviour
+class AlignSteering : public SteeringBehaviour
 {
 public:
-	SeekSteering(AAICharacter* InCharacter);
+	AlignSteering(AAICharacter* InCharacter) :
+		Character(InCharacter){};
 	
 	virtual FSOutputSteering GetSteering(float DeltaTime) override;
 	virtual void DrawDebug() override;
 private:
 	AAICharacter* Character;
-	//FVector Target;
-	FVector LastDesiredVelocity = FVector::ZeroVector;
-	FVector LastAcceleration = FVector::ZeroVector;
+	FVector LastOrientation = FVector::ZeroVector;
+
+	float timeToTarget = 0.1f;
 };

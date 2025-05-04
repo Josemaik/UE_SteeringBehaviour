@@ -37,6 +37,12 @@ public:
 	
 	UPROPERTY(EditAnywhere,Category = AIChar)
 	FVector CurrentVelocity;
+
+	// UPROPERTY(EditAnywhere,Category = AIChar)
+	// float CurrentOrientation;
+
+	UPROPERTY(EditAnywhere,Category = AIChar)
+	float currentAngularVelocity; 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -57,7 +63,19 @@ public:
 	const Params& GetParams() const { return m_params; }
 
 	FVector GetCurrentVelocity() const { return CurrentVelocity; }
-	
+	float GetCurretAngularVelocity() const { return currentAngularVelocity;}
+	float GetOrientation() const
+	{
+		float YawDegrees = GetActorRotation().Yaw;
+		float YawRadians = FMath::DegreesToRadians(YawDegrees);
+		return YawRadians;
+	}
+	void SetOrientation(float newOrientation)
+	{
+		float YawDegrees = FMath::RadiansToDegrees(newOrientation);
+		FRotator NewRotation = FRotator(0.f, YawDegrees, 0.0f);
+		SetActorRotation(NewRotation);
+	}
 	float GetActorAngle() const
 	{
 		FQuat currQuat = GetActorQuat();

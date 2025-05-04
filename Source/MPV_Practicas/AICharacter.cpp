@@ -5,8 +5,12 @@
 #include "params/params.h"
 #include "debug/debugdraw.h"
 #include "Steerings/SeekSteering.h"
+#include "Steerings/ArriveSteering.h"
+#include "Steerings/AlignSteering.h"
 #include "Steerings/Steering.h"
 #include <memory>
+
+#include "Steerings/ArriveSteering.h"
 
 // Sets default values
 AAICharacter::AAICharacter()
@@ -25,8 +29,13 @@ void AAICharacter::BeginPlay()
 
 	// 1. Initialize velocity
 	CurrentVelocity = FVector(100.f, 0.0f, 0.0f);
-
-	m_steeringBehaviour = new SeekSteering(this);
+	//Seek
+	//m_steeringBehaviour = new SeekSteering(this);
+	//Arrive
+	//m_steeringBehaviour = new ArriveSteering(this);
+	//Align
+	currentAngularVelocity = GetOrientation();
+	m_steeringBehaviour = new AlignSteering(this);
 }
 
 void AAICharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -53,17 +62,37 @@ void AAICharacter::Tick(float DeltaTime)
 	{
 		FSOutputSteering SteeringOutput = m_steeringBehaviour->GetSteering(DeltaTime);
 
-		CurrentVelocity += SteeringOutput.LinearAcceleration * DeltaTime;
+		//Seek
+		// if (!SteeringOutput.stop)
+		// {
+		// 	CurrentVelocity += SteeringOutput.LinearAcceleration * DeltaTime;
+		//
+		// 	// Clamp
+		// 	if (CurrentVelocity.Length() > m_params.max_velocity)
+		// 	{
+		// 		CurrentVelocity = CurrentVelocity.GetClampedToMaxSize(m_params.max_velocity);
+		// 	}
+		// }
+		// else
+		// {
+		// 	CurrentVelocity = SteeringOutput.LinearAcceleration;
+		// }
+		//Arrive
+		//CurrentVelocity += SteeringOutput.LinearAcceleration * DeltaTime;
+		// Clamp
+		// if (CurrentVelocity.Length() > m_params.max_velocity)
+		// {
+		// 	CurrentVelocity = CurrentVelocity.GetClampedToMaxSize(m_params.max_velocity);
+		// }
+		//Update position
+		// FVector NewLocation = GetActorLocation() + CurrentVelocity * DeltaTime;
+		// SetActorLocation(NewLocation);
 
-		// Clamp opcional a la velocidad máxima
-		if (CurrentVelocity.Length() > m_params.max_velocity)
-		{
-			CurrentVelocity = CurrentVelocity.GetClampedToMaxSize(m_params.max_velocity);
-		}
-	}
-	//Update position
-	FVector NewLocation = GetActorLocation() + CurrentVelocity * DeltaTime;
-	SetActorLocation(NewLocation);
+		//Align
+		currentAngularVelocity += SteeringOutput.AngularAcceleration * DeltaTime;
+		float newOrientation = GetOrientation() + currentAngularVelocity * DeltaTime;
+		SetOrientation(newOrientation);	}
+	
 }
 
 // Called to bind functionality to input
@@ -109,4 +138,9 @@ void AAICharacter::DrawDebug()
 		{ FVector(100.f, 0.f, 0.f), FVector(200.f, 0.f, 0.f), FVector(200.f, 0.f, 100.0f) }
 	};
 	SetPolygons(this, TEXT("navmesh"), TEXT("mesh"), Polygons, NavmeshMaterial);
+
+	if (m_steeringBehaviour)
+	{
+		m_steeringBehaviour->DrawDebug();
+	}
 }
