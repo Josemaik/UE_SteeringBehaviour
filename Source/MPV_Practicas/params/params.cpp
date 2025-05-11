@@ -69,11 +69,11 @@ bool ReadParams(const char* filename, Params& params)
 			FDefaultValueHelper::ParseFloat(value, params.dest_radius);
 		}
 		//Arrive
-		paramElem = MyChildNode->FindChildNode(TEXT("deceleration_radius"));
+		paramElem = MyChildNode->FindChildNode(TEXT("arrive_radius"));
 		if (paramElem)
 		{
 			value = paramElem->GetAttribute("value");
-			FDefaultValueHelper::ParseFloat(value, params.deceleration_radius);
+			FDefaultValueHelper::ParseFloat(value, params.arrive_radius);
 		}
 
 		//align

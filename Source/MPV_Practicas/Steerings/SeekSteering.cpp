@@ -1,4 +1,3 @@
-#include "C:\Users\JOSE MANUEL\Desktop\UTAD\IA\MPV_Practicas_Skeleton\MPV_Practicas_Skeleton\Intermediate\Build\Win64\x64\MPV_PracticasEditor\Development\UnrealEd\SharedPCH.UnrealEd.Project.RTTI.NoValFmtStr.ValApi.Cpp20.InclOrderUnreal5_3.h"
 #include "SeekSteering.h"
 #include "MPV_Practicas/AICharacter.h"
 #include "MPV_Practicas/debug/debugdraw.h"
@@ -21,19 +20,19 @@ FSOutputSteering SeekSteering::GetSteering(float DeltaTime)
 	
 	//If we want to stop--------------------------------
 	//Check distance to target
-	// float Distance = FVector::Dist(Position, Target);
-	// if (Distance < Character->GetParams().dest_radius)
-	// {
-	// 	GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Green,
-	// 		FString::Printf(TEXT("Stop Movement")));
-	// 	// Stop movement
-	// 	LastDesiredVelocity = FVector::ZeroVector;
-	// 	LastAcceleration = FVector::ZeroVector;
-	// 	Output.LinearAcceleration = FVector::ZeroVector;
-	// 	Output.AngularAcceleration = 0.f;
-	// 	Output.stop = true;
-	// 	return Output;
-	// }
+	float Distance = FVector::Dist(Position, Target);
+	if (Distance < Character->GetParams().dest_radius)
+	{
+		GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Green,
+			FString::Printf(TEXT("Stop Movement")));
+		// Stop movement
+		LastDesiredVelocity = FVector::ZeroVector;
+		LastAcceleration = FVector::ZeroVector;
+		Output.LinearAcceleration = FVector::ZeroVector;
+		Output.AngularAcceleration = 0.f;
+		Output.stop = true;
+		return Output;
+	}
 	//------------------------------------------------------
 	
 	//Target Direction

@@ -14,7 +14,7 @@ struct Params
     float max_angular_acceleration;
 
     float dest_radius;
-    float deceleration_radius;
+    float arrive_radius;
     float align_radius;
     float angular_arrive_radius;
 };

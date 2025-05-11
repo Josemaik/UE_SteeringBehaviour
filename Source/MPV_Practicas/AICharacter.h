@@ -42,7 +42,7 @@ public:
 	// float CurrentOrientation;
 
 	UPROPERTY(EditAnywhere,Category = AIChar)
-	float currentAngularVelocity; 
+	float currentAngularVelocity = 1.f; 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -66,15 +66,21 @@ public:
 	float GetCurretAngularVelocity() const { return currentAngularVelocity;}
 	float GetOrientation() const
 	{
-		float YawDegrees = GetActorRotation().Yaw;
-		float YawRadians = FMath::DegreesToRadians(YawDegrees);
-		return YawRadians;
+		// float YawDegrees = GetActorRotation().Yaw;
+		// float YawRadians = FMath::DegreesToRadians(YawDegrees);
+		// return YawRadians;
+		float PitchDegrees = GetActorRotation().Pitch;
+		return FMath::DegreesToRadians(PitchDegrees);
 	}
 	void SetOrientation(float newOrientation)
 	{
-		float YawDegrees = FMath::RadiansToDegrees(newOrientation);
-		FRotator NewRotation = FRotator(0.f, YawDegrees, 0.0f);
-		SetActorRotation(NewRotation);
+		// float YawDegrees = FMath::RadiansToDegrees(newOrientation);
+		// FRotator NewRotation = FRotator(0.f, YawDegrees, 0.0f);
+		// SetActorRotation(NewRotation);
+		float PitchDegrees = FMath::RadiansToDegrees(newOrientation);
+		FRotator CurrentRotation = FRotator(PitchDegrees,0.f,0.f);//GetActorRotation();
+		CurrentRotation.Pitch = PitchDegrees;
+		SetActorRotation(CurrentRotation);
 	}
 	float GetActorAngle() const
 	{
@@ -95,4 +101,6 @@ public:
 
 	//steering behaviour
 	SteeringBehaviour* m_steeringBehaviour;
+	//stereing behaviour 2
+	SteeringBehaviour* m_steeringBehaviour2;
 };
