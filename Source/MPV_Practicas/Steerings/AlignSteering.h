@@ -16,5 +16,5 @@ private:
 	AAICharacter* Character;
 	FVector LastOrientation = FVector::ZeroVector;
 
-	float timeToTarget = 0.5f;
+	float timeToTarget = 0.1f;
 };

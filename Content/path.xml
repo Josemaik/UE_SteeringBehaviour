@@ -1,0 +1,8 @@
+<root> 
+	<points> 
+		<point x="-600" y="300"></point> 
+		<point x="400" y="300"></point> 
+		<point x="400" y="-300"></point> 
+		<point x="-600" y="-300"></point> 
+	</points> 
+</root> 

@@ -48,6 +48,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	Params m_params;
+	Params m_pathParams;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -61,6 +62,7 @@ public:
 	void OnClickedRight(const FVector& mousePosition);
 	
 	const Params& GetParams() const { return m_params; }
+	void SetTargetPosition(const FVector& NewPos) { m_params.targetPosition = NewPos; }
 
 	FVector GetCurrentVelocity() const { return CurrentVelocity; }
 	float GetCurretAngularVelocity() const { return currentAngularVelocity;}

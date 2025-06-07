@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "Steerings/ArriveSteering.h"
+#include "Steerings/PathFollowing.h"
 
 // Sets default values
 AAICharacter::AAICharacter()
@@ -35,8 +36,9 @@ void AAICharacter::BeginPlay()
 	//m_steeringBehaviour = new ArriveSteering(this);
 	//Align
 	currentAngularVelocity = GetOrientation();
-	m_steeringBehaviour = new AlignSteering(this);
-	m_steeringBehaviour2 = new ArriveSteering(this);
+	//m_steeringBehaviour = new AlignSteering(this);
+	//m_steeringBehaviour2 = new ArriveSteering(this);
+	m_steeringBehaviour = new PathFollowing(this, m_params.PathPoints);
 }
 
 void AAICharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -61,13 +63,12 @@ void AAICharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	current_angle = GetActorAngle();
 
-	DrawDebug();
-
 	//Aply steering
-	if (m_steeringBehaviour && m_steeringBehaviour2)
+	if (m_steeringBehaviour /*&& m_steeringBehaviour2*/)
 	{
-		FSOutputSteering SteeringOutput = m_steeringBehaviour->GetSteering(DeltaTime);
-		FSOutputSteering SteeringOutput2 = m_steeringBehaviour2->GetSteering(DeltaTime);
+		//FSOutputSteering SteeringOutputAlign = m_steeringBehaviour->GetSteering(DeltaTime);
+		//FSOutputSteering SteeringOutputArrive = m_steeringBehaviour2->GetSteering(DeltaTime);
+		FSOutputSteering SteeringOutputPath = m_steeringBehaviour->GetSteering(DeltaTime);
 		//Seek
 		// if (!SteeringOutput2.stop)
 		// {
@@ -84,21 +85,44 @@ void AAICharacter::Tick(float DeltaTime)
 		// 	CurrentVelocity = SteeringOutput2.LinearAcceleration;
 		// }
 		//Arrive
-		CurrentVelocity += SteeringOutput2.LinearAcceleration * DeltaTime;
-		 //Clamp
-		 if (CurrentVelocity.Length() > m_params.max_velocity)
-		 {
-		 	CurrentVelocity = CurrentVelocity.GetClampedToMaxSize(m_params.max_velocity);
-		 }
-		//Update position
-		FVector NewLocation = GetActorLocation() + CurrentVelocity * DeltaTime;
-		SetActorLocation(NewLocation);
+		// CurrentVelocity += SteeringOutputArrive.LinearAcceleration * DeltaTime;
+		//  //Clamp
+		//  if (CurrentVelocity.Length() > m_params.max_velocity)
+		//  {
+		//  	CurrentVelocity = CurrentVelocity.GetClampedToMaxSize(m_params.max_velocity);
+		//  }
+		// //Update position
+		// FVector NewLocation = GetActorLocation() + CurrentVelocity * DeltaTime;
+		// SetActorLocation(NewLocation);
 
 		//Align
-		currentAngularVelocity += SteeringOutput.AngularAcceleration * DeltaTime;
-		float newOrientation = GetOrientation() + currentAngularVelocity * DeltaTime;
-		SetOrientation(newOrientation);
+		// currentAngularVelocity += SteeringOutputAlign.AngularAcceleration * DeltaTime;
+		// //damping suave
+		// //currentAngularVelocity *= 0.95f;
+		// float newOrientation = GetOrientation() + currentAngularVelocity * DeltaTime;
+		// SetOrientation(newOrientation);
+
+		//Path
+		CurrentVelocity += SteeringOutputPath.LinearAcceleration * DeltaTime;
+
+		// Clamp velocity
+		if (CurrentVelocity.Size() > m_params.max_velocity)
+		{
+			CurrentVelocity = CurrentVelocity.GetSafeNormal() * m_params.max_velocity;
+		}
+
+		// Update position
+		FVector newPos = GetActorLocation() + CurrentVelocity * DeltaTime;
+		SetActorLocation(newPos);
+
+		// --- Optional: Orientation update (simplified version) ---
+		// if (!CurrentVelocity.IsNearlyZero())
+		// {
+		// 	FRotator newRot = CurrentVelocity.Rotation(); // Convert to rotator
+		// 	SetActorRotation(FRotator(0.f, newRot.Yaw, 0.f));
+		// }
 	}
+	DrawDebug();
 }
 
 // Called to bind functionality to input
@@ -119,31 +143,38 @@ void AAICharacter::OnClickedRight(const FVector& mousePosition)
 
 	FVector dir = (mousePosition - GetActorLocation()).GetSafeNormal();
 	float angle = FMath::RadiansToDegrees(atan2(dir.Z, dir.X));
-	m_params.targetRotation = angle + 10.f;
+	m_params.targetRotation = angle;
 }
 
 void AAICharacter::DrawDebug()
 {
-	TArray<FVector> Points =
+	// TArray<FVector> Points =
+	// {
+	// 	FVector(0.f, 0.f, 0.f),
+	// 	FVector(100.f, 0.f, 0.f),
+	// 	FVector(100.f, 0.f, 100.f),
+	// 	FVector(100.f, 0.f, 100.f),
+	// 	FVector(0.f, 0.f, 100.f)
+	// };
+
+	//SetPath(this, TEXT("follow_path"), TEXT("path"), m_params.PathPoints, 20.0f, PathMaterial);
+
+	// Pintar puntos del path
+	for (int32 i = 0; i < m_params.PathPoints.Num(); ++i)
 	{
-		FVector(0.f, 0.f, 0.f),
-		FVector(100.f, 0.f, 0.f),
-		FVector(100.f, 0.f, 100.f),
-		FVector(100.f, 0.f, 100.f),
-		FVector(0.f, 0.f, 100.f)
-	};
-
-	SetPath(this, TEXT("follow_path"), TEXT("path"), Points, 5.0f, PathMaterial);
-
+		//DrawDebugLine(GetWorld(), PathPoints[i], PathPoints[i+1], FColor::Yellow, false, -1, 0, 3.f);
+		DrawDebugSphere(GetWorld(), m_params.PathPoints[i], 10.f, 8, FColor::Blue, false, -1, 0, 2.f);
+	}
+	
 	SetCircle(this, TEXT("targetPosition"), m_params.targetPosition, 20.0f);
 	// FVector dir(cos(FMath::DegreesToRadians(m_params.targetRotation)), 0.0f, sin(FMath::DegreesToRadians(m_params.targetRotation)));
 	// SetArrow(this, TEXT("targetRotation"), dir, 80.0f);
 
-	TArray<TArray<FVector>> Polygons = {
-		{ FVector(0.f, 0.f, 0.f), FVector(100.f, 0.f, 0.f), FVector(100.f, 0.f, 100.0f), FVector(0.f, 0.f, 100.0f) },
-		{ FVector(100.f, 0.f, 0.f), FVector(200.f, 0.f, 0.f), FVector(200.f, 0.f, 100.0f) }
-	};
-	SetPolygons(this, TEXT("navmesh"), TEXT("mesh"), Polygons, NavmeshMaterial);
+	// TArray<TArray<FVector>> Polygons = {
+	// 	{ FVector(0.f, 0.f, 0.f), FVector(100.f, 0.f, 0.f), FVector(100.f, 0.f, 100.0f), FVector(0.f, 0.f, 100.0f) },
+	// 	{ FVector(100.f, 0.f, 0.f), FVector(200.f, 0.f, 0.f), FVector(200.f, 0.f, 100.0f) }
+	// };
+	//SetPolygons(this, TEXT("navmesh"), TEXT("mesh"), Polygons, NavmeshMaterial);
 
 	if (m_steeringBehaviour)
 	{
