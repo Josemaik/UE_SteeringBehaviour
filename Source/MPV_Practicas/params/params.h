@@ -1,7 +1,9 @@
 #ifndef __PARAMS_H__
 #define __PARAMS_H__
 
+#include "../Structs/Obstacle.h"
 #include <CoreMinimal.h>
+
 
 struct Params
 {
@@ -20,10 +22,13 @@ struct Params
 
     float look_ahead;
     float time_ahead;
+    float char_radius;
     TArray<FVector> PathPoints;
+    TArray<Obstacle> Obstacles;
 };
 
 bool ReadParams(const char* filename, Params& params);
 bool ReadPath(const char* filename, Params& params);
+bool ReadObstacles(const char* filename, Params& params);
 
 #endif

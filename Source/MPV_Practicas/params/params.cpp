@@ -115,9 +115,17 @@ bool ReadParams(const char* filename, Params& params)
 			value = paramElem->GetAttribute("value");
 			FDefaultValueHelper::ParseFloat(value, params.time_ahead);
 		}
+
+		paramElem = MyChildNode->FindChildNode(TEXT("char_radius"));
+		if (paramElem)
+		{
+			value = paramElem->GetAttribute("value");
+			FDefaultValueHelper::ParseFloat(value, params.char_radius);
+		}
 	}
 
 	ReadPath("path.xml",params);
+	ReadObstacles("obstacles.xml",params);
 	return true;
 }
 
@@ -149,6 +157,41 @@ bool ReadPath(const char* filename, Params& params)
 				float x = FCString::Atof(*PointNode->GetAttribute(TEXT("x")));
 				float y = FCString::Atof(*PointNode->GetAttribute(TEXT("y")));
 				params.PathPoints.Add(FVector(x,0.0f, y));  // z=0 si es 2D
+			}
+		}
+	}
+	return true;
+}
+
+bool ReadObstacles(const char* filename, Params& params)
+{
+	FString CurrentDirectory = FPlatformProcess::GetCurrentWorkingDirectory();
+
+	// Log or use the current working directory
+	UE_LOG(LogTemp, Log, TEXT("Current working directory: %s"), *CurrentDirectory);
+
+	FString ContentFolderDir = FPaths::ProjectContentDir();
+
+	//FString FilePath(TEXT("./params.xml"));
+	FString params_path = filename;
+	FString FilePath = FPaths::Combine(*ContentFolderDir, *params_path);
+	UE_LOG(LogTemp, Log, TEXT("Params Path: %s"), *FilePath);
+
+	
+	FXmlFile XmlFile(FilePath, EConstructMethod::ConstructFromFile);
+
+	if (XmlFile.IsValid())
+	{
+		FXmlNode* Root = XmlFile.GetRootNode();
+		FXmlNode* PointsNode = Root->FindChildNode(TEXT("obstacles"));
+		if (PointsNode)
+		{
+			for (FXmlNode* PointNode : PointsNode->GetChildrenNodes())
+			{
+				float x = FCString::Atof(*PointNode->GetAttribute(TEXT("x")));
+				float y = FCString::Atof(*PointNode->GetAttribute(TEXT("y")));
+				float r = FCString::Atof(*PointNode->GetAttribute(TEXT("r")));
+				params.Obstacles.Add(Obstacle(FVector(x,0.0f, y),r)); 
 			}
 		}
 	}

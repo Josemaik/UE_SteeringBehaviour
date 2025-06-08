@@ -12,6 +12,8 @@
 
 #include "Steerings/ArriveSteering.h"
 #include "Steerings/PathFollowing.h"
+#include "Steerings/ObstacleAvoidanceSteering.h"
+#include "Structs/Obstacle.h"
 
 // Sets default values
 AAICharacter::AAICharacter()
@@ -39,6 +41,7 @@ void AAICharacter::BeginPlay()
 	//m_steeringBehaviour = new AlignSteering(this);
 	//m_steeringBehaviour2 = new ArriveSteering(this);
 	m_steeringBehaviour = new PathFollowing(this, m_params.PathPoints);
+	m_obstacleAvoidance = new ObstacleAvoidanceSteering(this,m_params.Obstacles);
 }
 
 void AAICharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -55,6 +58,11 @@ void AAICharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		delete m_steeringBehaviour2;
 		m_steeringBehaviour2 = nullptr;
 	}
+	if (m_obstacleAvoidance)
+	{
+		delete m_obstacleAvoidance;
+		m_obstacleAvoidance = nullptr;
+	}
 }
 
 // Called every frame
@@ -69,6 +77,13 @@ void AAICharacter::Tick(float DeltaTime)
 		//FSOutputSteering SteeringOutputAlign = m_steeringBehaviour->GetSteering(DeltaTime);
 		//FSOutputSteering SteeringOutputArrive = m_steeringBehaviour2->GetSteering(DeltaTime);
 		FSOutputSteering SteeringOutputPath = m_steeringBehaviour->GetSteering(DeltaTime);
+		FSOutputSteering avoid = m_obstacleAvoidance->GetSteering(DeltaTime);
+
+		// GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("EvadedForce: %f,%f,%f"),
+		// 	avoid.LinearAcceleration.X, avoid.LinearAcceleration.Y, avoid.LinearAcceleration.Z));
+		//FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration;
+		FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration;
+		//blended = blended.GetClampedToMaxSize(m_params.max_acceleration);
 		//Seek
 		// if (!SteeringOutput2.stop)
 		// {
@@ -103,8 +118,9 @@ void AAICharacter::Tick(float DeltaTime)
 		// SetOrientation(newOrientation);
 
 		//Path
-		CurrentVelocity += SteeringOutputPath.LinearAcceleration * DeltaTime;
-
+		//CurrentVelocity += SteeringOutputPath.LinearAcceleration * DeltaTime;
+		CurrentVelocity += blended * DeltaTime;
+		
 		// Clamp velocity
 		if (CurrentVelocity.Size() > m_params.max_velocity)
 		{
@@ -167,6 +183,21 @@ void AAICharacter::DrawDebug()
 	}
 	
 	SetCircle(this, TEXT("targetPosition"), m_params.targetPosition, 20.0f);
+
+	FString ActorName;
+	for (int32 i = 0; i < m_params.Obstacles.Num(); ++i)
+	{
+		if (i == 0)
+		{
+			ActorName = TEXT("Obstacle_0");
+		}
+		if (i == 1)
+		{
+			ActorName = TEXT("Obstacle_1");
+		}
+		SetCircle(this,ActorName,m_params.Obstacles[i].position,  m_params.Obstacles[i].radius, FColor::White);
+	}
+
 	// FVector dir(cos(FMath::DegreesToRadians(m_params.targetRotation)), 0.0f, sin(FMath::DegreesToRadians(m_params.targetRotation)));
 	// SetArrow(this, TEXT("targetRotation"), dir, 80.0f);
 
