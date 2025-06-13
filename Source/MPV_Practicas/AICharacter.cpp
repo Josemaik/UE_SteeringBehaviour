@@ -82,7 +82,7 @@ void AAICharacter::Tick(float DeltaTime)
 		// GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("EvadedForce: %f,%f,%f"),
 		// 	avoid.LinearAcceleration.X, avoid.LinearAcceleration.Y, avoid.LinearAcceleration.Z));
 		//FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration;
-		FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration;
+		FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration * 2.f;
 		//blended = blended.GetClampedToMaxSize(m_params.max_acceleration);
 		//Seek
 		// if (!SteeringOutput2.stop)

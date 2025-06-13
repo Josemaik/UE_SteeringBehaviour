@@ -1,4 +1,4 @@
-#include "C:\Users\JOSE MANUEL\Desktop\UTAD\IA\MPV_Practicas_Skeleton\Practicas\UE_SteeringBehaviour\Intermediate\Build\Win64\x64\MPV_PracticasEditor\Development\UnrealEd\SharedPCH.UnrealEd.Project.RTTI.NoValFmtStr.ValApi.Cpp20.InclOrderUnreal5_3.h"
+//#include "C:\Users\JOSE MANUEL\Desktop\UTAD\IA\MPV_Practicas_Skeleton\Practicas\UE_SteeringBehaviour\Intermediate\Build\Win64\x64\MPV_PracticasEditor\Development\UnrealEd\SharedPCH.UnrealEd.Project.RTTI.NoValFmtStr.ValApi.Cpp20.InclOrderUnreal5_3.h"
 #include "ObstacleAvoidanceSteering.h"
 #include "DrawDebugHelpers.h"
 #include "../Structs/Obstacle.h"
@@ -12,86 +12,80 @@ FSOutputSteering ObstacleAvoidanceSteering::GetSteering(float DeltaTime)
 {
 	FSOutputSteering output;
 
-	FVector pos = m_character->GetActorLocation();
+	FVector CharacterPosition = m_character->GetActorLocation();
 	FVector vel = m_character->GetCurrentVelocity();
+	float LookAhead = m_character->GetParams().look_ahead;
+	float charRadius = m_character->GetParams().char_radius;
+	float MaxAcceleration =	m_character->GetParams().max_acceleration;
 
 	if (vel.IsNearlyZero())
 		return output;
 
-	FVector dir = vel.GetSafeNormal();
-	float lookAhead = m_character->GetParams().look_ahead;
-	float charRadius = m_character->GetParams().char_radius;
-	const float avoidanceStrength = m_character->GetParams().max_acceleration * 25.5f;
-	
+	FVector Ro = vel.GetSafeNormal();
+	FVector LookAheadDirection = Ro * LookAhead;
+	//const float avoidanceStrength =  MaxAcceleration * 25.5f;
+
 	float closestDist = FLT_MAX;
-	FVector avoidanceForce = FVector::ZeroVector;
-	bool found = false;
+	FVector bestAvoidance = FVector::ZeroVector;
 
 	for (const Obstacle& obs : m_obstacles)
 	{
-		FVector toObstacle = obs.position - m_character->GetActorLocation();
-		float forwardDist = FVector::DotProduct(toObstacle, dir);
-
-		if (forwardDist < 0)
-			continue;
-
-		//FVector projected = dir * forwardDist;
-		FVector lateralVec = toObstacle;// - projected;
-		float lateralDist = lateralVec.Size();
-
-		float combinedRadius = obs.radius + charRadius;
-		
-		DrawDebugCircle(
-			m_character->GetWorld(),
-			obs.position,
-			combinedRadius,
-			32,
-			FColor::Green,
-			false,
-			0.1f,
-			0,
-			2.0f,
-			FVector(1, 0, 0), // eje X
-			FVector(0, 0, 1), // eje Y
-			false // no dibujar en 3D
-		);
-
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Lateraldist: %f Combined: %f"),
-			lateralDist,combinedRadius));
-		
-		if (lateralDist < combinedRadius)
+		//const Obstacle& obs = m_obstacles[0];
+		FVector ToObstacle = obs.position - CharacterPosition;
+	
+		float forwardDist = FVector::DotProduct(ToObstacle, Ro);
+		if (forwardDist < 0 ||forwardDist > LookAheadDirection.Length())
 		{
-			//if (forwardDist < closestDist)
-			//{
-				// Dirección de evasión lateral respecto al movimiento
-				FVector avoidanceDir = FVector::CrossProduct(dir, FVector::RightVector); // Perpendicular a dir en el plano horizontal
-
-		
-				// Dirección de evasión: lateral respecto al obstáculo
-				//FVector avoidanceDir = lateralVec.GetSafeNormal();
-				// Decidir dirección según de qué lado está el obstáculo
-				if (FVector::DotProduct(avoidanceDir, lateralVec) < 0)
-				{
-					avoidanceDir *= -1.f; //asi funciona pero colapsa con el obstaculo 
-				}						  //Sin esto esquiva el obstaculo a trompicines
-				// Escalar según cercanía y penetración
-				float penetration = combinedRadius - lateralDist;
-				avoidanceForce = avoidanceDir * (avoidanceStrength + penetration);
-
-				closestDist = forwardDist;
-				found = true;
-			//}
+			continue;//return output;
 		}
+	
+		FVector ClosestPoint = CharacterPosition + Ro * forwardDist;
+		
+	
+		//continue;
+		FVector Diff = ClosestPoint - obs.position;
+		float dist = Diff.Length();
+
+		if (dist >= obs.radius + charRadius) continue;//return output;
+
+		FVector lp = Diff.GetSafeNormal();  // Vector desde obstáculo hacia punto más cercano
+
+		// Producto cruzado en plano XZ → usamos componente Y
+		float side = FVector::CrossProduct(Ro, lp).Y;
+
+		// Vector perpendicular a 'ro' en XZ (rotado 90°)
+		FVector avoidanceDir = FVector(-Ro.Z, 0.0f, Ro.X); // rotado a la izquierda
+
+		if (side > 0) {
+			// Si el obstáculo está a la derecha, giramos a la izquierda
+			avoidanceDir *= -1.0f;
+		}
+
+		// Escalar fuerza según cercanía y penetración
+		float penetration = obs.radius - dist;
+		float strength = MaxAcceleration * (1.0f - forwardDist / LookAhead) + penetration * 10.0f;
+
+		/*output.LinearAcceleration*/ FVector avoidanceForce = avoidanceDir.GetSafeNormal() * strength;
+		//output.LinearAcceleration = output.LinearAcceleration.GetClampedToMaxSize(MaxAcceleration);
+
+		// Escoger el obstáculo más urgente (más cercano en el eje de movimiento)
+		if (forwardDist < closestDist)
+		{
+			closestDist = forwardDist;
+			bestAvoidance = avoidanceForce;
+		}
+		
+		//DrawDebugLine(m_character->GetWorld(), CharacterPosition, CharacterPosition + output.LinearAcceleration * 0.2f, FColor::Red, false, 0.1f, 0, 4.0f);
+		
+		//return output; 
 	}
 
-	if (found)
+	if (!bestAvoidance.IsNearlyZero())
 	{
-		output.LinearAcceleration = avoidanceForce; //GetClampedToMaxSize(m_character->GetParams().max_acceleration * 2.0f);
-
-		// Debug
-		DrawDebugLine(m_character->GetWorld(), pos, pos + output.LinearAcceleration * 0.2f, FColor::Red, false, 0.1f, 0, 4.f);
+		output.LinearAcceleration = bestAvoidance;
+		DrawDebugLine(m_character->GetWorld(), CharacterPosition, CharacterPosition + output.LinearAcceleration * 0.2f, FColor::Red, false, 0.1f, 0, 4.0f);
 	}
-
+	
 	return output;
 }
 
