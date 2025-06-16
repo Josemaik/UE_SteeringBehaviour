@@ -105,7 +105,6 @@ public:
 	SteeringBehaviour* m_steeringBehaviour;
 	//stereing behaviour 2
 	SteeringBehaviour* m_steeringBehaviour2;
-
 	//obstacle avoidance
 	SteeringBehaviour* m_obstacleAvoidance;
 };

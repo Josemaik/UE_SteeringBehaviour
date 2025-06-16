@@ -253,3 +253,11 @@ void SetPolygons(const AActor* owner, const FString& polygon_actor_name, const F
         ProceduralMeshComponent->SetMaterial(0, material);
     }
 }
+
+void HideCircle(const AActor* owner, const FString& circle_name)
+{
+    AActor* Circle = GetActorByLabel(owner, circle_name);
+    Circle->SetHidden(true);
+    Circle->SetActorHiddenInGame(true);
+    Circle->SetIsHiddenEdLayer(true);
+}

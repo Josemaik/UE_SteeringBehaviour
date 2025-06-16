@@ -11,6 +11,6 @@
 		<targetRotation value="90"></targetRotation> 
 		<look_ahead value="80"></look_ahead> 
 		<time_ahead value="4"></time_ahead> 
-		<char_radius value="40"></char_radius>
+		<char_radius value="60"></char_radius>
 	</params>
 </root>

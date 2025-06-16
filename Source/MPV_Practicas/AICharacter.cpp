@@ -31,17 +31,22 @@ void AAICharacter::BeginPlay()
 	ReadParams("params.xml", m_params);
 
 	// 1. Initialize velocity
-	CurrentVelocity = FVector(100.f, 0.0f, 0.0f);
+	//CurrentVelocity = FVector(100.f, 0.0f, 0.0f);
 	//Seek
 	//m_steeringBehaviour = new SeekSteering(this);
 	//Arrive
 	//m_steeringBehaviour = new ArriveSteering(this);
 	//Align
-	currentAngularVelocity = GetOrientation();
+	//currentAngularVelocity = GetOrientation();
 	//m_steeringBehaviour = new AlignSteering(this);
 	//m_steeringBehaviour2 = new ArriveSteering(this);
-	m_steeringBehaviour = new PathFollowing(this, m_params.PathPoints);
-	m_obstacleAvoidance = new ObstacleAvoidanceSteering(this,m_params.Obstacles);
+	//m_steeringBehaviour = new PathFollowing(this, m_params.PathPoints);
+	//m_obstacleAvoidance = new ObstacleAvoidanceSteering(this,m_params.Obstacles);
+	if (!m_obstacleAvoidance)
+	{
+		HideCircle(this,"Obstacle_0");
+		HideCircle(this,"Obstacle_1");
+	}
 }
 
 void AAICharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -72,18 +77,18 @@ void AAICharacter::Tick(float DeltaTime)
 	current_angle = GetActorAngle();
 
 	//Aply steering
-	if (m_steeringBehaviour /*&& m_steeringBehaviour2*/)
+	if (m_steeringBehaviour && m_obstacleAvoidance)
 	{
 		//FSOutputSteering SteeringOutputAlign = m_steeringBehaviour->GetSteering(DeltaTime);
+		
 		//FSOutputSteering SteeringOutputArrive = m_steeringBehaviour2->GetSteering(DeltaTime);
-		FSOutputSteering SteeringOutputPath = m_steeringBehaviour->GetSteering(DeltaTime);
-		FSOutputSteering avoid = m_obstacleAvoidance->GetSteering(DeltaTime);
-
-		// GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("EvadedForce: %f,%f,%f"),
-		// 	avoid.LinearAcceleration.X, avoid.LinearAcceleration.Y, avoid.LinearAcceleration.Z));
-		//FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration;
-		FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration * 2.f;
+		
+		// FSOutputSteering SteeringOutputPath = m_steeringBehaviour->GetSteering(DeltaTime);
+		// FSOutputSteering avoid = m_obstacleAvoidance->GetSteering(DeltaTime);
+		// FVector blended = SteeringOutputPath.LinearAcceleration + avoid.LinearAcceleration * 2.f;
 		//blended = blended.GetClampedToMaxSize(m_params.max_acceleration);
+
+		
 		//Seek
 		// if (!SteeringOutput2.stop)
 		// {
@@ -99,6 +104,7 @@ void AAICharacter::Tick(float DeltaTime)
 		// {
 		// 	CurrentVelocity = SteeringOutput2.LinearAcceleration;
 		// }
+		
 		//Arrive
 		// CurrentVelocity += SteeringOutputArrive.LinearAcceleration * DeltaTime;
 		//  //Clamp
@@ -119,7 +125,8 @@ void AAICharacter::Tick(float DeltaTime)
 
 		//Path
 		//CurrentVelocity += SteeringOutputPath.LinearAcceleration * DeltaTime;
-		CurrentVelocity += blended * DeltaTime;
+		//Path + Obstacle Avoidance
+		//CurrentVelocity += blended * DeltaTime;
 		
 		// Clamp velocity
 		if (CurrentVelocity.Size() > m_params.max_velocity)
@@ -176,27 +183,26 @@ void AAICharacter::DrawDebug()
 	//SetPath(this, TEXT("follow_path"), TEXT("path"), m_params.PathPoints, 20.0f, PathMaterial);
 
 	// Pintar puntos del path
-	for (int32 i = 0; i < m_params.PathPoints.Num(); ++i)
-	{
-		//DrawDebugLine(GetWorld(), PathPoints[i], PathPoints[i+1], FColor::Yellow, false, -1, 0, 3.f);
-		DrawDebugSphere(GetWorld(), m_params.PathPoints[i], 10.f, 8, FColor::Blue, false, -1, 0, 2.f);
-	}
+	// for (int32 i = 0; i < m_params.PathPoints.Num(); ++i)
+	// {
+	// 	//DrawDebugLine(GetWorld(), PathPoints[i], PathPoints[i+1], FColor::Yellow, false, -1, 0, 3.f);
+	// 	DrawDebugSphere(GetWorld(), m_params.PathPoints[i], 10.f, 8, FColor::Blue, false, -1, 0, 2.f);
+	// }
 	
 	SetCircle(this, TEXT("targetPosition"), m_params.targetPosition, 20.0f);
-
-	FString ActorName;
-	for (int32 i = 0; i < m_params.Obstacles.Num(); ++i)
-	{
-		if (i == 0)
-		{
-			ActorName = TEXT("Obstacle_0");
-		}
-		if (i == 1)
-		{
-			ActorName = TEXT("Obstacle_1");
-		}
-		SetCircle(this,ActorName,m_params.Obstacles[i].position,  m_params.Obstacles[i].radius, FColor::White);
-	}
+	// FString ActorName;
+	// for (int32 i = 0; i < m_params.Obstacles.Num(); ++i)
+	// {
+	// 	if (i == 0)
+	// 	{
+	// 		ActorName = TEXT("Obstacle_0");
+	// 	}
+	// 	if (i == 1)
+	// 	{
+	// 		ActorName = TEXT("Obstacle_1");
+	// 	}
+	// 	SetCircle(this,ActorName,m_params.Obstacles[i].position,  m_params.Obstacles[i].radius, FColor::White);
+	// }
 
 	// FVector dir(cos(FMath::DegreesToRadians(m_params.targetRotation)), 0.0f, sin(FMath::DegreesToRadians(m_params.targetRotation)));
 	// SetArrow(this, TEXT("targetRotation"), dir, 80.0f);
@@ -207,6 +213,28 @@ void AAICharacter::DrawDebug()
 	// };
 	//SetPolygons(this, TEXT("navmesh"), TEXT("mesh"), Polygons, NavmeshMaterial);
 
+	
+	// FVector Origin = GetActorLocation();  // punto de inicio del grid
+	// float CellSize = 100.f;
+	// int Rows = 8;
+	// int Columns = 8;
+	//
+	// for (int x = 0; x < Columns; x++)
+	// {
+	// 	for (int y = 0; y < Rows; y++)
+	// 	{
+	// 		FVector CellCenter = Origin + FVector(x * CellSize, 0.f, y * CellSize);
+	// 		FVector BoxExtent(CellSize * 0.5f, 5.f, CellSize * 0.5); // Z pequeño para que sea plano
+	//
+	// 		// Color según el tipo de celda (por ejemplo: libre, ocupada, costosa)
+	// 		FColor Color = FColor::Green; // libre
+	// 		// Cambia color si está ocupada, etc.
+	// 		DrawDebugPoint(GetWorld(),CellCenter,10.f,FColor::Red);
+	// 		DrawDebugBox(GetWorld(), CellCenter, BoxExtent, Color, false, -1, 0, 2);
+	// 	}
+	// }
+
+	
 	if (m_steeringBehaviour)
 	{
 		m_steeringBehaviour->DrawDebug();
