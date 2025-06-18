@@ -11,6 +11,17 @@
 
 #include "AICharacter.generated.h"
 
+UENUM(BlueprintType)
+enum class ESteerings : uint8
+{
+	Seek UMETA(DisplayName = "Seek"),
+	Arrive UMETA(DisplayName = "Arrive"),
+	Align UMETA(DisplayName = "Align")
+	//PathFollowing UMETA(DisplayName = "Path Following"),
+	//PathFollowingObstacleAvoidance UMETA(DisplayName = "Path Following + Obstacle Avoidance")
+};
+
+
 class SteeringBehaviour;
 
 UCLASS()
@@ -43,6 +54,17 @@ public:
 
 	UPROPERTY(EditAnywhere,Category = AIChar)
 	float currentAngularVelocity = 1.f; 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AIChar)
+	ESteerings CurrentSteering;
+
+	//steering behaviour
+	SteeringBehaviour* m_steeringBehaviour;
+	//stereing behaviour 2
+	SteeringBehaviour* m_steeringBehaviour2;
+	//obstacle avoidance
+	SteeringBehaviour* m_obstacleAvoidance;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -53,8 +75,15 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void UpdateArriveSteering(float DeltaTime);
+
+	void UpdateVelocity(float DeltaTime);
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION(BlueprintCallable)
+	void SetSteering(ESteerings NewSteering);
 
 	UFUNCTION(BlueprintCallable, Category = "AIFunctions")
 	void OnClickedLeft(const FVector& mousePosition);
@@ -101,10 +130,4 @@ public:
 
 	void DrawDebug();
 
-	//steering behaviour
-	SteeringBehaviour* m_steeringBehaviour;
-	//stereing behaviour 2
-	SteeringBehaviour* m_steeringBehaviour2;
-	//obstacle avoidance
-	SteeringBehaviour* m_obstacleAvoidance;
 };

@@ -7,7 +7,7 @@ PathFollowing::PathFollowing(AAICharacter* character, const TArray<FVector>& inP
 	: m_character(character), m_path(inPath), m_currentIndex(0)
 {
 	m_currentIndex = GetClosestIndexOnPath();
-	m_seek = new SeekSteering(character);
+	m_seek = new SeekSteering(character,false);
 }
 
 PathFollowing::~PathFollowing()

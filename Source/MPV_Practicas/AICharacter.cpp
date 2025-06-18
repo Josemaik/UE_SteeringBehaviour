@@ -20,7 +20,7 @@ AAICharacter::AAICharacter()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
+	CurrentSteering = ESteerings::Seek;
 }
 
 // Called when the game starts or when spawned
@@ -30,8 +30,27 @@ void AAICharacter::BeginPlay()
 
 	ReadParams("params.xml", m_params);
 
-	// 1. Initialize velocity
-	//CurrentVelocity = FVector(100.f, 0.0f, 0.0f);
+	//Initialize velocity
+	CurrentVelocity = FVector(100.f, 0.0f, 0.0f);
+
+	//Start with Seek
+	SetSteering(ESteerings::Seek);
+	/*switch (CurrentSteering)
+	{
+	case ESteerings::Seek: m_steeringBehaviour = new SeekSteering(this,false);
+		break;
+	case ESteerings::Arrive: m_steeringBehaviour = new ArriveSteering(this);
+		break;
+	case ESteerings::ArriveAlign:
+	{
+		currentAngularVelocity = GetOrientation();
+		m_steeringBehaviour = new AlignSteering(this);
+		m_steeringBehaviour2 = new ArriveSteering(this);
+	}
+		break;
+	default:
+		break;
+	}*/
 	//Seek
 	//m_steeringBehaviour = new SeekSteering(this);
 	//Arrive
@@ -76,9 +95,53 @@ void AAICharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	current_angle = GetActorAngle();
 
-	//Aply steering
-	if (m_steeringBehaviour && m_obstacleAvoidance)
+	switch (CurrentSteering)
 	{
+	case ESteerings::Seek: {
+			if (!m_steeringBehaviour) return;
+		 FSOutputSteering SeekOutput = m_steeringBehaviour->GetSteering(DeltaTime);
+		 if (!SeekOutput.stop)
+		 {
+		 	CurrentVelocity += SeekOutput.LinearAcceleration * DeltaTime;
+		
+		 	// Clamp
+		 	if (CurrentVelocity.Length() > m_params.max_velocity)
+		 	{
+		 		CurrentVelocity = CurrentVelocity.GetClampedToMaxSize(m_params.max_velocity);
+		 	}
+		 }
+		 else
+		 {
+		 	CurrentVelocity = SeekOutput.LinearAcceleration;
+		 }
+		 // Update position
+		 FVector newPos = GetActorLocation() + CurrentVelocity * DeltaTime;
+		 SetActorLocation(newPos);
+	}
+		break;
+	case ESteerings::Arrive: {
+		UpdateArriveSteering(DeltaTime);
+	}
+		break;
+	case ESteerings::Align:
+	{
+		UpdateArriveSteering(DeltaTime);
+
+		if (!m_steeringBehaviour2) return;
+		 FSOutputSteering SteeringOutputAlign = m_steeringBehaviour2->GetSteering(DeltaTime);
+		 currentAngularVelocity += SteeringOutputAlign.AngularAcceleration * DeltaTime;
+		 //damping suave
+		 //currentAngularVelocity *= 0.95f;
+		 float newOrientation = GetOrientation() + currentAngularVelocity * DeltaTime;
+		 SetOrientation(newOrientation);
+	}
+		break;
+	default:
+		break;
+	}
+	//Aply steering
+	//if (m_steeringBehaviour && m_obstacleAvoidance)
+	//{
 		//FSOutputSteering SteeringOutputAlign = m_steeringBehaviour->GetSteering(DeltaTime);
 		
 		//FSOutputSteering SteeringOutputArrive = m_steeringBehaviour2->GetSteering(DeltaTime);
@@ -129,14 +192,12 @@ void AAICharacter::Tick(float DeltaTime)
 		//CurrentVelocity += blended * DeltaTime;
 		
 		// Clamp velocity
-		if (CurrentVelocity.Size() > m_params.max_velocity)
+		/*if (CurrentVelocity.Size() > m_params.max_velocity)
 		{
 			CurrentVelocity = CurrentVelocity.GetSafeNormal() * m_params.max_velocity;
-		}
+		}*/
 
-		// Update position
-		FVector newPos = GetActorLocation() + CurrentVelocity * DeltaTime;
-		SetActorLocation(newPos);
+		
 
 		// --- Optional: Orientation update (simplified version) ---
 		// if (!CurrentVelocity.IsNearlyZero())
@@ -144,8 +205,28 @@ void AAICharacter::Tick(float DeltaTime)
 		// 	FRotator newRot = CurrentVelocity.Rotation(); // Convert to rotator
 		// 	SetActorRotation(FRotator(0.f, newRot.Yaw, 0.f));
 		// }
-	}
+	//}
 	DrawDebug();
+}
+
+void AAICharacter::UpdateArriveSteering(float DeltaTime)
+{
+	if (!m_steeringBehaviour) return;
+	FSOutputSteering ArriveOutput = m_steeringBehaviour->GetSteering(DeltaTime);
+	CurrentVelocity += ArriveOutput.LinearAcceleration * DeltaTime;
+	//Clamp
+	if (CurrentVelocity.Length() > m_params.max_velocity)
+	{
+		CurrentVelocity = CurrentVelocity.GetClampedToMaxSize(m_params.max_velocity);
+	}
+	// Update position
+	UpdateVelocity(DeltaTime);
+}
+
+void AAICharacter::UpdateVelocity(float DeltaTime)
+{
+	FVector newPos = GetActorLocation() + CurrentVelocity * DeltaTime;
+	SetActorLocation(newPos);
 }
 
 // Called to bind functionality to input
@@ -242,5 +323,39 @@ void AAICharacter::DrawDebug()
 	if (m_steeringBehaviour2)
 	{
 		m_steeringBehaviour2->DrawDebug();
+	}
+}
+
+void AAICharacter::SetSteering(ESteerings NewSteering)
+{
+	// Limpia anteriores
+	if (m_steeringBehaviour)
+	{
+		delete m_steeringBehaviour;
+		m_steeringBehaviour = nullptr;
+	}
+	if (m_steeringBehaviour2)
+	{
+		delete m_steeringBehaviour2;
+		m_steeringBehaviour2 = nullptr;
+	}
+
+	CurrentSteering = NewSteering;
+
+	switch (NewSteering)
+	{
+	case ESteerings::Seek: m_steeringBehaviour = new SeekSteering(this, false);
+		break;
+	case ESteerings::Arrive: m_steeringBehaviour = new ArriveSteering(this);
+		break;
+	case ESteerings::Align:
+	{
+		currentAngularVelocity = GetOrientation();
+		m_steeringBehaviour = new ArriveSteering(this);
+		m_steeringBehaviour2 = new AlignSteering(this);
+	}
+	break;
+	default:
+		break;
 	}
 }

@@ -7,7 +7,7 @@ class AAICharacter;
 class SeekSteering : public SteeringBehaviour
 {
 public:
-	SeekSteering(AAICharacter* InCharacter);
+	SeekSteering(AAICharacter* InCharacter, bool _CheckStop);
 	
 	virtual FSOutputSteering GetSteering(float DeltaTime) override;
 	virtual void DrawDebug() override;
@@ -16,4 +16,6 @@ private:
 	//FVector Target;
 	FVector LastDesiredVelocity = FVector::ZeroVector;
 	FVector LastAcceleration = FVector::ZeroVector;
+
+	bool CheckStop;
 };

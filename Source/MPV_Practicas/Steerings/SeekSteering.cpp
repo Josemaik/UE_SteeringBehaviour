@@ -2,8 +2,8 @@
 #include "MPV_Practicas/AICharacter.h"
 #include "MPV_Practicas/debug/debugdraw.h"
 
-SeekSteering::SeekSteering(AAICharacter* InCharacter)
-	:Character(InCharacter)
+SeekSteering::SeekSteering(AAICharacter* InCharacter, bool _CheckStop)
+	:Character(InCharacter),CheckStop(_CheckStop)
 {
 }
 
@@ -20,18 +20,19 @@ FSOutputSteering SeekSteering::GetSteering(float DeltaTime)
 	
 	//If we want to stop--------------------------------
 	//Check distance to target
-	float Distance = FVector::Dist(Position, Target);
-	if (Distance < Character->GetParams().dest_radius)
+	if (CheckStop)
 	{
-		GEngine->AddOnScreenDebugMessage(0, 5.f, FColor::Green,
-			FString::Printf(TEXT("Stop Movement")));
-		// Stop movement
-		LastDesiredVelocity = FVector::ZeroVector;
-		LastAcceleration = FVector::ZeroVector;
-		Output.LinearAcceleration = FVector::ZeroVector;
-		Output.AngularAcceleration = 0.f;
-		Output.stop = true;
-		return Output;
+		float Distance = FVector::Dist(Position, Target);
+		if (Distance < Character->GetParams().dest_radius)
+		{
+			// Stop movement
+			LastDesiredVelocity = FVector::ZeroVector;
+			LastAcceleration = FVector::ZeroVector;
+			Output.LinearAcceleration = FVector::ZeroVector;
+			Output.AngularAcceleration = 0.f;
+			Output.stop = true;
+			return Output;
+		}
 	}
 	//------------------------------------------------------
 	
